@@ -6,9 +6,20 @@ import Button from '../../Button';
 import Link from '../../Link';
 import '../style.css';
 
-const STAR_REPOSITORY = gql`
-  mutation($id: ID!) {
-    addStar(input: { starrableId: $id }) {
+const ADD_STAR = gql`
+  mutation($repositoryId: ID!) {
+    addStar(input: { starrableId: $repositoryId }) {
+      starrable {
+        id
+        viewerHasStarred
+      }
+    }
+  }
+`;
+
+const REMOVE_STAR = gql`
+  mutation ($repositoryId: ID!) {
+    removeStar(input: { starrableId: $repositoryId }) {
       starrable {
         id
         viewerHasStarred
@@ -41,8 +52,8 @@ const RepositoryItem = ({
         {
           !viewerHasStarred ? (
             <Mutation
-              mutation={STAR_REPOSITORY}
-              variables={{ id }}
+              mutation={ADD_STAR}
+              variables={{ repositoryId: id }}
             >
               {
                 (
@@ -63,7 +74,28 @@ const RepositoryItem = ({
               }
             </Mutation>
           ) : (
-            <span>{/* Here comes your removeStar mutation */}</span>
+            <Mutation
+              mutation={REMOVE_STAR}
+              variables={{ repositoryId: id }}
+            >
+              {
+                (
+                  removeStar,
+                  {
+                    data,
+                    error,
+                    loading,
+                  }
+                ) => (
+                  <Button
+                    className="Repository-title-action"
+                    onClick={removeStar}
+                  >
+                    {stargazers.totalCount} Unstar
+                  </Button>
+                )
+              }
+            </Mutation>
           )
         }
         {/* Here comes your updateSubscription mutation */}
