@@ -29,6 +29,32 @@ const REMOVE_STAR = gql`
   }
 `;
 
+const WATCH_REPOSITORY = gql`
+  mutation (
+    $repositoryId: ID!,
+    $viewerSubscription: SubscriptionState!,
+  ) {
+    updateSubscription(
+      input: {
+        state: $viewerSubscription,
+        subscribableId: $repositoryId,
+      }
+    ) {
+      subscribable {
+        id
+        viewerSubscription
+      }
+    }
+  }
+`;
+
+const VIEWER_SUBSCRIPTIONS = {
+  SUBSCRIBED: 'SUBSCRIBED',
+  UNSUBSCRIBED: 'UNSUBSCRIBED',
+};
+
+const isWatch = viewerSubscription => viewerSubscription === VIEWER_SUBSCRIPTIONS.SUBSCRIBED;
+
 const updateAddStar = (
   client,
   {
@@ -87,6 +113,40 @@ const updateRemoveStar = (
       }
     }
   })
+};
+
+const updateWatch = (
+  client,
+  {
+    data: {
+      updateSubscription: {
+        subscribable: {
+          id,
+          viewerSubscription,
+        },
+      },
+    },
+  },
+) => {
+  const repository = client.readFragment({
+    fragment: REPOSITORY_FRAGMENT,
+    id: `Repository${id}`,
+  });
+
+  let { totalCount } = repository.watchers;
+  totalCount = viewerSubscription === VIEWER_SUBSCRIPTIONS.SUBSCRIBED ? totalCount + 1 : totalCount - 1;
+
+  client.writeFragment({
+    data: {
+      ...repository,
+      watchers: {
+        ...repository.watchers,
+        totalCount,
+      }
+    },
+    fragment: REPOSITORY_FRAGMENT,
+    id: `Repository${id}`,
+  });
 };
 
 const RepositoryItem = ({
@@ -162,7 +222,36 @@ const RepositoryItem = ({
             </Mutation>
           )
         }
-        {/* Here comes your updateSubscription mutation */}
+
+        <Mutation
+          mutation={WATCH_REPOSITORY}
+          variables={{
+            repositoryId: id,
+            viewerSubscription: isWatch(viewerSubscription)
+              ? VIEWER_SUBSCRIPTIONS.UNSUBSCRIBED
+              : VIEWER_SUBSCRIPTIONS.SUBSCRIBED,
+          }}
+          update={updateWatch}
+        >
+          {
+            (
+              updateSubscription,
+              {
+                data,
+                error,
+                loading,
+              }
+            ) => (
+              <Button
+                className="RepositoryItem-title-action"
+                onClick={updateSubscription}
+              >
+                {watchers.totalCount}{' '}
+                {isWatch(viewerSubscription) ? 'Unwatch' : 'Watch'}
+              </Button>
+            )
+          }
+        </Mutation>
       </div>
     </div>
 
