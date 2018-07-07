@@ -122,7 +122,7 @@ const updateWatch = (
 ) => {
   const repository = client.readFragment({
     fragment: REPOSITORY_FRAGMENT,
-    id: `Repository${id}`
+    id: `Repository:${id}`
   });
 
   let { totalCount } = repository.watchers;
@@ -140,7 +140,7 @@ const updateWatch = (
       }
     },
     fragment: REPOSITORY_FRAGMENT,
-    id: `Repository${id}`
+    id: `Repository:${id}`
   });
 };
 
